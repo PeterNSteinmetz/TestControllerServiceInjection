@@ -1,0 +1,6 @@
+.link_to_grails/
+target
+target-eclipse
+application.properties
+stacktrace.log
+
