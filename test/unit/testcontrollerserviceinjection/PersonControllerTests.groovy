@@ -1,12 +1,11 @@
 package testcontrollerserviceinjection
 
 
+import grails.test.mixin.TestMixin
+import grails.test.mixin.domain.DomainClassUnitTestMixin
+import grails.test.mixin.web.ControllerUnitTestMixin
 
-import org.junit.*
-import grails.test.mixin.*
-
-@TestFor(PersonController)
-@Mock(Person)
+@TestMixin([ControllerUnitTestMixin,DomainClassUnitTestMixin])
 class PersonControllerTests {
 
 
@@ -21,14 +20,6 @@ class PersonControllerTests {
         assert "/person/list" == response.redirectedUrl
     }
 
-    void testList() {
-
-        def model = controller.list()
-
-        assert model.personInstanceList.size() == 0
-        assert model.personInstanceTotal == 0
-    }
-
     void testCreate() {
        def model = controller.create()
 
@@ -36,6 +27,12 @@ class PersonControllerTests {
     }
 
     void testSave() {
+		defineBeans {
+			springSecurityService(FakeSecurityService)
+	    }
+		mockDomain(Person)
+		def controller = testFor(PersonController)
+
         controller.save()
 
         assert model.personInstance != null
@@ -44,6 +41,9 @@ class PersonControllerTests {
         response.reset()
 
         populateValidParams(params)
+		// debug stepping into the following shows that while the person and password fields 
+		// are set to the value from the params, the springSecurityService is null, despite
+		// the defineBeans and mockDomain calls above
         controller.save()
 
         assert response.redirectedUrl == '/person/show/1'
@@ -51,109 +51,4 @@ class PersonControllerTests {
         assert Person.count() == 1
     }
 
-    void testShow() {
-        controller.show()
-
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-
-        params.id = person.id
-
-        def model = controller.show()
-
-        assert model.personInstance == person
-    }
-
-    void testEdit() {
-        controller.edit()
-
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-
-        params.id = person.id
-
-        def model = controller.edit()
-
-        assert model.personInstance == person
-    }
-
-    void testUpdate() {
-        controller.update()
-
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-        response.reset()
-
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-
-        // test invalid parameters in update
-        params.id = person.id
-		params.password = ''
-
-        controller.update()
-
-        assert view == "/person/edit"
-        assert model.personInstance != null
-
-        person.clearErrors()
-
-        populateValidParams(params)
-        controller.update()
-
-        assert response.redirectedUrl == "/person/show/$person.id"
-        assert flash.message != null
-
-        //test outdated version number
-        response.reset()
-        person.clearErrors()
-
-        populateValidParams(params)
-        params.id = person.id
-        params.version = -1
-        controller.update()
-
-        assert view == "/person/edit"
-        assert model.personInstance != null
-        assert model.personInstance.errors.getFieldError('version')
-        assert flash.message != null
-    }
-
-    void testDelete() {
-        controller.delete()
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-        response.reset()
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-        assert Person.count() == 1
-
-        params.id = person.id
-
-        controller.delete()
-
-        assert Person.count() == 0
-        assert Person.get(person.id) == null
-        assert response.redirectedUrl == '/person/list'
-    }
 }
