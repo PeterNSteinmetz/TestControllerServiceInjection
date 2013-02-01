@@ -39,7 +39,10 @@ class PersonControllerTests {
         assert view == '/person/create'
 
         response.reset()
-
+		
+		// test if springSecurityService bean exists
+		assertNotNull applicationContext.getBean("springSecurityService")
+		
         populateValidParams(params)
 		// debug stepping into the following shows that while the person and password fields 
 		// are set to the value from the params, the springSecurityService is null, despite
