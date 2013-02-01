@@ -36,13 +36,25 @@ class PersonControllerTests {
     }
 
     void testSave() {
+		Person.metaClass.getSpringSecurityService = { return new FakeSecurityService() }
+		
         controller.save()
 
         assert model.personInstance != null
         assert view == '/person/create'
 
         response.reset()
-
+		
+		// in this approach there is no bean in the context
+		try {
+			applicationContext.getBean("springSecurityService")
+			fail "should have thrown exception for non-existant bean"
+		} catch (Exception e) {
+		}
+		
+		// show that a getSpringSecurityMethod is defined on the Person
+		assertNotNull Person.metaClass.getMethods().contains("getSpringSecurityService")
+		
         populateValidParams(params)
         controller.save()
 
@@ -51,109 +63,4 @@ class PersonControllerTests {
         assert Person.count() == 1
     }
 
-    void testShow() {
-        controller.show()
-
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-
-        params.id = person.id
-
-        def model = controller.show()
-
-        assert model.personInstance == person
-    }
-
-    void testEdit() {
-        controller.edit()
-
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-
-        params.id = person.id
-
-        def model = controller.edit()
-
-        assert model.personInstance == person
-    }
-
-    void testUpdate() {
-        controller.update()
-
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-        response.reset()
-
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-
-        // test invalid parameters in update
-        params.id = person.id
-		params.password = ''
-
-        controller.update()
-
-        assert view == "/person/edit"
-        assert model.personInstance != null
-
-        person.clearErrors()
-
-        populateValidParams(params)
-        controller.update()
-
-        assert response.redirectedUrl == "/person/show/$person.id"
-        assert flash.message != null
-
-        //test outdated version number
-        response.reset()
-        person.clearErrors()
-
-        populateValidParams(params)
-        params.id = person.id
-        params.version = -1
-        controller.update()
-
-        assert view == "/person/edit"
-        assert model.personInstance != null
-        assert model.personInstance.errors.getFieldError('version')
-        assert flash.message != null
-    }
-
-    void testDelete() {
-        controller.delete()
-        assert flash.message != null
-        assert response.redirectedUrl == '/person/list'
-
-        response.reset()
-
-        populateValidParams(params)
-        def person = new Person(params)
-
-        assert person.save() != null
-        assert Person.count() == 1
-
-        params.id = person.id
-
-        controller.delete()
-
-        assert Person.count() == 0
-        assert Person.get(person.id) == null
-        assert response.redirectedUrl == '/person/list'
-    }
 }
