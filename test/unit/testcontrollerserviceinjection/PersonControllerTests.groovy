@@ -9,6 +9,10 @@ import grails.test.mixin.*
 @Mock(Person)
 class PersonControllerTests {
 
+	@Before
+	void setup() {
+	  Person.metaClass.encodePassword = { -> }
+	}
 
     def populateValidParams(params) {
       assert params != null
@@ -36,6 +40,7 @@ class PersonControllerTests {
     }
 
     void testSave() {
+		
         controller.save()
 
         assert model.personInstance != null
